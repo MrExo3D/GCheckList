@@ -1,0 +1,327 @@
+/* gSender puts html.dark on the plugin iframe; prefers-color-scheme is not reliable here */
+:root {
+    color-scheme: light;
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: 13px;
+    line-height: 1.4;
+
+    --bg: #ffffff;
+    --fg: #1f2937;
+    --muted: #6b7280;
+    --border: #d1d5db;
+    --hover: #f3f4f6;
+    --accent: #2563eb;
+    --accent-fg: #ffffff;
+    --ok: #16a34a;
+    --ok-bg: #f0fdf4;
+    --ok-fg: #ffffff;
+    --danger: #dc2626;
+    --warn-bg: #fef3c7;
+    --warn-border: #f59e0b;
+}
+
+html.dark {
+    color-scheme: dark;
+    --bg: #1e2124;
+    --fg: #e5e7eb;
+    --muted: #9ca3af;
+    --border: #3f4448;
+    --hover: #2a2e32;
+    --accent: #3b82f6;
+    --ok: #4ade80;
+    --ok-bg: #16281d;
+    --ok-fg: #052e16;
+    --danger: #f87171;
+    --warn-bg: #3a2f12;
+    --warn-border: #d97706;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+}
+
+.app {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 8px;
+}
+
+.loading {
+    color: var(--muted);
+}
+
+h1 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.toolbar-buttons,
+.actions {
+    display: flex;
+    gap: 6px;
+}
+
+.count {
+    margin-left: 4px;
+    padding: 1px 6px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.count.all {
+    border-color: var(--ok);
+    color: var(--ok);
+}
+
+button {
+    font: inherit;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    min-height: 40px;
+    padding: 6px 14px;
+    cursor: pointer;
+    touch-action: manipulation;
+}
+
+button:hover:not(:disabled) {
+    background: var(--hover);
+}
+
+button:disabled {
+    opacity: 0.45;
+    cursor: default;
+}
+
+button.primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--accent-fg);
+}
+
+button.primary:hover:not(:disabled) {
+    background: var(--accent);
+    filter: brightness(1.1);
+}
+
+button.danger {
+    color: var(--danger);
+    border-color: var(--danger);
+}
+
+button.icon {
+    min-width: 40px;
+    padding: 0;
+}
+
+button.icon.danger {
+    border-color: var(--border);
+}
+
+button.link {
+    align-self: flex-start;
+    min-height: 0;
+    border: none;
+    padding: 0;
+    background: none;
+    color: var(--muted);
+    text-decoration: underline;
+}
+
+.checklist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 6px;
+}
+
+/* the iframe is as wide as the Tools panel, so this tracks the panel width */
+@media (min-width: 480px) {
+    .checklist {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.checklist li {
+    display: flex;
+}
+
+/* touch-sized: at least 48px tall, the whole row is the target */
+.checklist .item {
+    width: 100%;
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    text-align: left;
+    font-size: 15px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.checklist .item:active {
+    transform: scale(0.99);
+}
+
+.checklist .box {
+    flex: none;
+    width: 26px;
+    height: 26px;
+    border: 2px solid var(--border);
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 17px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--ok-fg);
+}
+
+.checklist .item.done {
+    border-color: var(--ok);
+    background: var(--ok-bg);
+}
+
+.checklist .item.done:hover:not(:disabled) {
+    background: var(--ok-bg);
+}
+
+.checklist .item.done .box {
+    background: var(--ok);
+    border-color: var(--ok);
+}
+
+.checklist .item.done .text {
+    color: var(--muted);
+    text-decoration: line-through;
+}
+
+.hint {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.error {
+    margin: 0;
+    color: var(--danger);
+    font-size: 12px;
+}
+
+.prompt {
+    min-height: 100vh;
+    background: var(--warn-bg);
+    border: 2px solid var(--warn-border);
+    border-radius: 6px;
+}
+
+.prompt-head p {
+    margin: 2px 0 0;
+}
+
+.prompt .actions button {
+    flex: 1;
+    min-height: 52px;
+    font-size: 15px;
+    font-weight: 600;
+}
+
+.editor {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.edit-items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.edit-items li {
+    display: flex;
+    gap: 4px;
+}
+
+input[type='text'] {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    color: var(--fg);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    min-height: 40px;
+    padding: 6px 10px;
+}
+
+input[type='text']:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
+}
+
+fieldset {
+    margin: 0;
+    padding: 6px 8px 8px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+legend {
+    padding: 0 4px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 40px;
+    cursor: pointer;
+}
+
+.option input {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+}
+
+.confirm {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+}

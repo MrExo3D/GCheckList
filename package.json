@@ -1,0 +1,23 @@
+{
+  "name": "job-checklist",
+  "private": true,
+  "version": "0.1.4",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit && vite build",
+    "watch": "vite build --watch",
+    "package": "npm run build && node scripts/package.mjs"
+  },
+  "dependencies": {
+    "@sienci/gsender-plugin-sdk": "^0.2.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.0"
+  }
+}
