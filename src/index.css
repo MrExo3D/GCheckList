@@ -237,6 +237,41 @@ button.link {
     font-size: 12px;
 }
 
+/* flashes the whole panel red twice when a job starts before everything is ticked */
+html.flashing body {
+    animation: flash-red 0.7s ease-in-out 2;
+}
+
+@keyframes flash-red {
+    0%,
+    100% {
+        background: var(--bg);
+    }
+    50% {
+        background: #dc2626;
+    }
+}
+
+.options {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 40px;
+    cursor: pointer;
+}
+
+.option input {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+}
+
 .editor {
     display: flex;
     flex-direction: column;

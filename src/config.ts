@@ -4,6 +4,9 @@ export type ChecklistItem = { id: string; text: string };
 
 export type Config = {
     items: ChecklistItem[];
+    // when a job starts before everything is ticked:
+    flash: boolean; // flash the panel red
+    sound: boolean; // play a sound
 };
 
 // gSender saves plugin data with a deep merge, which can add and overwrite but
@@ -54,11 +57,13 @@ const DEFAULT_ITEM_TEXT = [
 
 export const defaultConfig = (): Config => ({
     items: DEFAULT_ITEM_TEXT.map((text) => ({ id: newId(), text })),
+    flash: true,
+    sound: true,
 });
 
 // storage holds whatever an older version (or a hand edit) wrote, so take
 // only the fields that look right and fall back to defaults for the rest.
-// Settings from versions that could pause jobs (mode, beep, flash...) are
+// Settings from versions that could pause jobs (mode, beep, autoReset...) are
 // ignored and dropped the next time the list is saved.
 const sanitizeConfig = (raw: unknown): Config => {
     const fallback = defaultConfig();
@@ -81,7 +86,11 @@ const sanitizeConfig = (raw: unknown): Config => {
                       all.findIndex((other) => other.id === item.id) === index,
               )
         : fallback.items;
-    return { items };
+    return {
+        items,
+        flash: typeof value.flash === 'boolean' ? value.flash : fallback.flash,
+        sound: typeof value.sound === 'boolean' ? value.sound : fallback.sound,
+    };
 };
 
 // Ticks from a previous launch say nothing about the job being set up now, so
@@ -134,7 +143,9 @@ export const loadState = async (): Promise<{
     const hasOldSettings =
         !!savedConfig &&
         typeof savedConfig === 'object' &&
-        Object.keys(savedConfig).some((key) => key !== 'items');
+        Object.keys(savedConfig).some(
+            (key) => !['items', 'flash', 'sound'].includes(key),
+        );
     if (savedConfig === undefined || hasOldSettings) {
         await saveConfig(config);
     }

@@ -9,6 +9,7 @@ import {
     saveChecked,
     saveConfig,
 } from './config';
+import { useJobStartAlert } from './useJobStartAlert';
 type ChecklistProps = {
     items: ChecklistItem[];
     checked: Set<string>;
@@ -132,6 +133,33 @@ const Editor = ({ config, onChange, onDone }: EditorProps) => {
                 + Add item
             </button>
 
+            <div className="options">
+                <p className="hint">
+                    If a job starts before everything is ticked (only while this
+                    tab is open):
+                </p>
+                <label className="option">
+                    <input
+                        type="checkbox"
+                        checked={config.flash}
+                        onChange={(e) =>
+                            onChange({ ...config, flash: e.target.checked })
+                        }
+                    />
+                    Flash red
+                </label>
+                <label className="option">
+                    <input
+                        type="checkbox"
+                        checked={config.sound}
+                        onChange={(e) =>
+                            onChange({ ...config, sound: e.target.checked })
+                        }
+                    />
+                    Play a sound
+                </label>
+            </div>
+
             {/* the plugin iframe can't open browser dialogs, so confirm inline */}
             {confirmingRestore ? (
                 <div className="confirm">
@@ -227,6 +255,12 @@ const App = () => {
     useEffect(() => {
         document.documentElement.classList.toggle('all-done', everythingTicked);
     }, [everythingTicked]);
+
+    // a visual and audible warning if a job starts with items still unticked
+    useJobStartAlert(
+        { flash: config?.flash ?? false, sound: config?.sound ?? false },
+        everythingTicked,
+    );
 
     if (!config) {
         return <div className="app loading">Loading…</div>;

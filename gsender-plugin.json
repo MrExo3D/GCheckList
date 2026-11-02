@@ -1,8 +1,8 @@
 {
   "id": "com.gcheck.job-checklist",
   "name": "GChecklist",
-  "description": "A pre-job checklist in the Tools panel: tick off your setup steps before every job, edit the list to suit your machine, and the panel turns green when everything is checked.",
-  "version": "0.2.0",
+  "description": "A pre-job checklist in the Tools panel: tick off your setup steps before every job, edit the list to suit your machine, and the panel turns green when everything is checked. If a job starts before everything is ticked it flashes red and plays a sound.",
+  "version": "0.3.0",
   "engine": ">=1.6.0",
   "ui": {
     "entry": "ui/index.html",
@@ -13,7 +13,7 @@
       }
     ]
   },
-  "permissions": ["storage"],
+  "permissions": ["machine:read", "storage"],
   "capabilities": {
     "requestTypes": [
       "storage:get",
@@ -23,7 +23,7 @@
       "storage:set:all",
       "storage:clear"
     ],
-    "topics": [],
-    "allowedFunctions": ["storage"]
+    "topics": ["controller"],
+    "allowedFunctions": ["machine", "storage"]
   }
 }
