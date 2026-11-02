@@ -1,9 +1,16 @@
-# Job Checklist (gSender plugin)
+# GChecklist (gSender plugin)
 
-A pre-job checklist that lives as a **Checklist** tab in gSender's Tools panel on the Carve screen.
+A pre-job checklist for [gSender](https://github.com/Sienci-Labs/gsender). It lives as a **Checklist** tab in the Tools panel on the Carve screen, so you can tick off your setup steps before every job, and it can pause a job that starts before everything is ticked.
 
-- Tick items off as you set up. **Reset** clears all ticks.
-- **Edit** lets you change the list: add, remove, reorder and rename items, plus the options below. Everything is saved by gSender.
+![GChecklist on gSender's Carve screen](docs/images/carve-screen.webp)
+
+## Features
+
+![The Checklist tab](docs/images/checklist-tab.png)
+
+- **Touch-friendly list:** every item is a large button, laid out in two columns when the panel is wide enough. Tap to tick, tap again to untick.
+- **Reset** clears all ticks.
+- **Edit** lets you add, remove, reorder and rename items, plus the options below. gSender saves everything.
 - **When a job starts:**
   - *Pause if anything is unticked* (default): the job is paused right after it starts, and the tab shows the list with **Continue job** and **Stop job** buttons.
   - *Always pause and ask*: pauses every job.
@@ -13,9 +20,9 @@ A pre-job checklist that lives as a **Checklist** tab in gSender's Tools panel o
 
 ## Limits
 
-gSender doesn't let plugins step in before a job starts, so this plugin pauses the job as soon as gSender reports that it's running.
+gSender doesn't let plugins step in before a job starts, so GChecklist pauses the job as soon as gSender reports that it's running.
 
-- A few lines of G-code may already have been sent by then. The spindle may be on and the first move may have begun. Treat this as a safety net, not a replacement for checking before you press Run.
+- A few lines of G-code may already have been sent by then. The spindle may be on and the first move may have begun. Treat this as a safety net, not a replacement for checking before you press Start.
 - Plugins can't show pop-ups over gSender. The prompt appears inside the Checklist tab, so keep that tab selected in the Tools panel if you want to see it. The beep helps when it isn't.
 - If you resume or stop the job with gSender's own buttons instead, the prompt closes by itself.
 
@@ -26,16 +33,20 @@ gSender doesn't let plugins step in before a job starts, so this plugin pauses t
    npm install
    npm run package
    ```
-   This creates `release/job-checklist/` and `release/job-checklist.zip`.
-2. Copy the `release/job-checklist` folder into gSender's plugins folder:
+   This creates `release/gchecklist/` and `release/gchecklist.zip`.
+2. Copy the `release/gchecklist` folder into gSender's plugins folder:
    - Windows: `%APPDATA%\gSender\plugins\`
    - macOS: `~/Library/Application Support/gSender/plugins/`
    - Linux: `~/.config/gSender/plugins/`
 
    The exact path is also shown under **Tools → Plugins**, which also has an install option for the zip.
-3. Restart gSender, enable **Job Checklist** under **Tools → Plugins** if it isn't already, then open the **Checklist** tab in the Tools panel on the Carve screen.
+3. Restart gSender. Check that **GChecklist** is enabled under **Tools → Plugins**:
 
-Needs a gSender build with plugin support (the manifest asks for `>=1.6.0`). The plugin asks for permission to read machine events, send pause, resume and stop commands, and save its own settings.
+   ![GChecklist in gSender's Plugins list](docs/images/plugins-page.png)
+
+4. On the Carve screen, open the **Checklist** tab in the Tools panel. If you don't see it, scroll the tab row with the arrow at its right end.
+
+Needs a gSender build with plugin support (the manifest asks for `>=1.6.0`; tested on 1.7.0 Edge). The plugin asks for permission to read machine events, send pause, resume and stop commands, and save its own settings.
 
 ## Develop
 

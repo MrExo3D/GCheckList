@@ -1,5 +1,5 @@
 // Copies just what gSender needs (manifest + built ui/) into
-// release/job-checklist/ and zips it for sharing.
+// release/gchecklist/ and zips it for sharing.
 import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const releaseDir = join(root, 'release');
-const outDir = join(releaseDir, 'job-checklist');
+const outDir = join(releaseDir, 'gchecklist');
 
 if (!existsSync(join(root, 'ui', 'index.html'))) {
     throw new Error('ui/index.html is missing. Run "npm run build" first.');
@@ -21,9 +21,9 @@ cpSync(join(root, 'ui'), join(outDir, 'ui'), { recursive: true });
 
 // zip from a temp copy: sync tools like Dropbox briefly lock freshly
 // written files, which makes Compress-Archive fail
-const stageDir = mkdtempSync(join(tmpdir(), 'job-checklist-'));
-const stagedPlugin = join(stageDir, 'job-checklist');
-const stagedZip = join(stageDir, 'job-checklist.zip');
+const stageDir = mkdtempSync(join(tmpdir(), 'gchecklist-'));
+const stagedPlugin = join(stageDir, 'gchecklist');
+const stagedZip = join(stageDir, 'gchecklist.zip');
 cpSync(root, stagedPlugin, {
     recursive: true,
     filter: (src) => {
@@ -43,11 +43,11 @@ if (process.platform === 'win32') {
         `Compress-Archive -Path '${stagedPlugin}' -DestinationPath '${stagedZip}' -Force`,
     ]);
 } else {
-    execFileSync('zip', ['-r', 'job-checklist.zip', 'job-checklist'], {
+    execFileSync('zip', ['-r', 'gchecklist.zip', 'gchecklist'], {
         cwd: stageDir,
     });
 }
-const zipPath = join(releaseDir, 'job-checklist.zip');
+const zipPath = join(releaseDir, 'gchecklist.zip');
 cpSync(stagedZip, zipPath);
 rmSync(stageDir, { recursive: true, force: true });
 
