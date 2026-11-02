@@ -55,9 +55,10 @@ type EditorProps = {
     config: Config;
     onChange: (config: Config) => void;
     onDone: () => void;
+    onTestPause: () => void;
 };
 
-const Editor = ({ config, onChange, onDone }: EditorProps) => {
+const Editor = ({ config, onChange, onDone, onTestPause }: EditorProps) => {
     const [confirmingRestore, setConfirmingRestore] = useState(false);
     const setItems = (items: ChecklistItem[]) => onChange({ ...config, items });
 
@@ -154,6 +155,16 @@ const Editor = ({ config, onChange, onDone }: EditorProps) => {
                         {MODE_LABELS[mode]}
                     </label>
                 ))}
+                <button
+                    type="button"
+                    className="test-pause"
+                    onClick={onTestPause}
+                >
+                    Test pause prompt
+                </button>
+                <span className="hint">
+                    Shows the prompt and plays the beep. No job is paused.
+                </span>
             </fieldset>
 
             <fieldset>
@@ -266,11 +277,22 @@ const App = () => {
         [updateChecked],
     );
 
-    const { phase, error, continueJob, stopJob } = useJobGuard({
-        config,
-        checked,
-        onJobEnded: resetChecks,
-    });
+    const { phase, error, preview, showPreview, continueJob, stopJob } =
+        useJobGuard({
+            config,
+            checked,
+            onJobEnded: resetChecks,
+        });
+
+    // turn the whole panel green once everything is ticked; the class goes on
+    // <html> so the background fills the iframe, not just the list
+    const everythingTicked =
+        !!config &&
+        config.items.length > 0 &&
+        config.items.every((item) => checked.includes(item.id));
+    useEffect(() => {
+        document.documentElement.classList.toggle('all-done', everythingTicked);
+    }, [everythingTicked]);
 
     if (!config) {
         return <div className="app loading">Loading…</div>;
@@ -287,15 +309,25 @@ const App = () => {
 
     if (phase !== 'none') {
         return (
-            <div className="app prompt" role="alertdialog" aria-live="assertive">
+            <div
+                className={allDone ? 'app prompt ready' : 'app prompt'}
+                role="alertdialog"
+                aria-live="assertive"
+            >
                 <div className="prompt-head">
                     <h1>
-                        {phase === 'pausing' ? 'Pausing job…' : 'Job paused'}
+                        {preview
+                            ? 'Test: job paused'
+                            : phase === 'pausing'
+                              ? 'Pausing job…'
+                              : 'Job paused'}
                     </h1>
                     <p>
-                        {allDone
-                            ? 'Everything is ticked. Ready to continue?'
-                            : 'Did you check everything before this job?'}
+                        {preview
+                            ? 'This is how the prompt looks. No job is running.'
+                            : allDone
+                              ? 'Everything is ticked. Ready to continue?'
+                              : 'Did you check everything before this job?'}
                     </p>
                 </div>
                 <Checklist
@@ -328,6 +360,10 @@ const App = () => {
                     config={config}
                     onChange={updateConfig}
                     onDone={() => setEditing(false)}
+                    onTestPause={() => {
+                        setEditing(false);
+                        showPreview();
+                    }}
                 />
             </div>
         );

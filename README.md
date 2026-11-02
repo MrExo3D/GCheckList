@@ -17,6 +17,7 @@ A pre-job checklist for [gSender](https://github.com/Sienci-Labs/gsender). It li
   - *Don't pause*: the list is just a reminder.
 - **Clear ticks when a job finishes** (default on): every job starts with a fresh list. Ticks are kept if you press **Stop job** in the prompt, so you don't lose what you'd already checked.
 - **Beep when pausing a job** (default on).
+- **Test pause prompt** (in Edit) shows the prompt and plays the beep without a job, so you can see what it looks like. No commands are sent to the machine.
 
 ## Limits
 

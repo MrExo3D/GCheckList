@@ -24,6 +24,8 @@ type Options = {
 export const useJobGuard = ({ config, checked, onJobEnded }: Options) => {
     const [phase, setPhase] = useState<GuardPhase>('none');
     const [error, setError] = useState<string | null>(null);
+    // the prompt is showing because of the Test pause button, not a real job
+    const [preview, setPreview] = useState(false);
 
     // the controller listener is registered once, so it reads these refs
     const configRef = useRef(config);
@@ -56,6 +58,7 @@ export const useJobGuard = ({ config, checked, onJobEnded }: Options) => {
                 return;
             }
             setError(null);
+            setPreview(false);
             updatePhase('pausing');
             if (cfg.beep) {
                 beep();
@@ -109,8 +112,30 @@ export const useJobGuard = ({ config, checked, onJobEnded }: Options) => {
         return unsubscribe;
     }, []);
 
+    // shows the prompt and beeps without touching the machine
+    const showPreview = useCallback(() => {
+        if (phaseRef.current !== 'none') {
+            return;
+        }
+        setError(null);
+        setPreview(true);
+        updatePhase('waiting');
+        if (configRef.current?.beep) {
+            beep();
+        }
+    }, []);
+
+    const closePreview = () => {
+        setPreview(false);
+        updatePhase('none');
+    };
+
     const continueJob = useCallback(async () => {
         setError(null);
+        if (preview) {
+            closePreview();
+            return;
+        }
         try {
             await machine.command('gcode:resume');
         } catch (err) {
@@ -118,10 +143,14 @@ export const useJobGuard = ({ config, checked, onJobEnded }: Options) => {
                 `Couldn't resume: ${err instanceof Error ? err.message : String(err)}`,
             );
         }
-    }, []);
+    }, [preview]);
 
     const stopJob = useCallback(async () => {
         setError(null);
+        if (preview) {
+            closePreview();
+            return;
+        }
         stoppedByPromptRef.current = true;
         try {
             await machine.command('gcode:stop', { force: true });
@@ -131,7 +160,7 @@ export const useJobGuard = ({ config, checked, onJobEnded }: Options) => {
                 `Couldn't stop: ${err instanceof Error ? err.message : String(err)}`,
             );
         }
-    }, []);
+    }, [preview]);
 
-    return { phase, error, continueJob, stopJob };
+    return { phase, error, preview, showPreview, continueJob, stopJob };
 };
