@@ -2,11 +2,11 @@
 
 A pre-job checklist for [gSender](https://github.com/Sienci-Labs/gsender). It lives as a **Checklist** tab in the Tools panel on the Carve screen, so you can tick off your setup steps before every job, and it can pause a job that starts before everything is ticked.
 
-![GChecklist on gSender's Carve screen](docs/images/carve-screen.webp)
+![The GChecklist tab in gSender](docs/images/checklist-tab.png)
 
 ## Features
 
-![The Checklist tab](docs/images/checklist-tab.png)
+![GChecklist on gSender's Carve screen](docs/images/carve-screen.webp)
 
 - **Touch-friendly list:** every item is a large button, laid out in two columns when the panel is wide enough. Tap to tick, tap again to untick.
 - **Reset** clears all ticks.
