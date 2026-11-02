@@ -189,6 +189,30 @@ const Editor = ({ config, onChange, onDone, onTestPause }: EditorProps) => {
                     />
                     Beep when pausing a job
                 </label>
+                <label className="option sub">
+                    <input
+                        type="checkbox"
+                        checked={config.repeatBeep}
+                        disabled={!config.beep}
+                        onChange={(e) =>
+                            onChange({
+                                ...config,
+                                repeatBeep: e.target.checked,
+                            })
+                        }
+                    />
+                    Keep beeping until answered
+                </label>
+                <label className="option">
+                    <input
+                        type="checkbox"
+                        checked={config.flash}
+                        onChange={(e) =>
+                            onChange({ ...config, flash: e.target.checked })
+                        }
+                    />
+                    Flash red when pausing a job
+                </label>
             </fieldset>
 
             {/* the plugin iframe can't open browser dialogs, so confirm inline */}
@@ -310,7 +334,13 @@ const App = () => {
     if (phase !== 'none') {
         return (
             <div
-                className={allDone ? 'app prompt ready' : 'app prompt'}
+                className={[
+                    'app prompt',
+                    allDone && 'ready',
+                    config.flash && 'flash',
+                ]
+                    .filter(Boolean)
+                    .join(' ')}
                 role="alertdialog"
                 aria-live="assertive"
             >
@@ -371,26 +401,6 @@ const App = () => {
 
     return (
         <div className="app">
-            <div className="toolbar">
-                <h1>
-                    Before you run{' '}
-                    <span className={allDone ? 'count all' : 'count'}>
-                        {doneCount}/{total}
-                    </span>
-                </h1>
-                <div className="toolbar-buttons">
-                    <button
-                        type="button"
-                        onClick={resetChecks}
-                        disabled={doneCount === 0}
-                    >
-                        Reset
-                    </button>
-                    <button type="button" onClick={() => setEditing(true)}>
-                        Edit
-                    </button>
-                </div>
-            </div>
             {loadError && (
                 <p className="error">Couldn't load saved list: {loadError}</p>
             )}
@@ -405,13 +415,27 @@ const App = () => {
                     onToggle={toggle}
                 />
             )}
-            <p className="hint footer">
-                {config.mode === 'off'
-                    ? 'Jobs start without a check.'
-                    : config.mode === 'always'
-                      ? 'Each job pauses right after it starts so you can confirm.'
-                      : 'A job pauses right after it starts if anything is unticked.'}
-            </p>
+            <div className="footer-bar">
+                <p className="hint footer">
+                    {config.mode === 'off'
+                        ? 'Jobs start without a check.'
+                        : config.mode === 'always'
+                          ? 'Each job pauses right after it starts so you can confirm.'
+                          : 'A job pauses right after it starts if anything is unticked.'}
+                </p>
+                <div className="toolbar-buttons">
+                    <button
+                        type="button"
+                        onClick={resetChecks}
+                        disabled={doneCount === 0}
+                    >
+                        Reset
+                    </button>
+                    <button type="button" onClick={() => setEditing(true)}>
+                        Edit
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };

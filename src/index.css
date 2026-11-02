@@ -94,19 +94,21 @@ h1 {
     gap: 6px;
 }
 
-.count {
-    margin-left: 4px;
-    padding: 1px 6px;
-    border-radius: 999px;
-    border: 1px solid var(--border);
-    color: var(--muted);
-    font-weight: 500;
-    font-size: 12px;
+/* hint on the left, Reset and Edit at the bottom right */
+.footer-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
-.count.all {
-    border-color: var(--ok);
-    color: var(--ok);
+.footer-bar .hint {
+    flex: 1 1 12rem;
+}
+
+.footer-bar .toolbar-buttons {
+    margin-left: auto;
 }
 
 button {
@@ -171,7 +173,7 @@ button.link {
     padding: 0;
     display: grid;
     grid-template-columns: 1fr;
-    gap: 6px;
+    gap: 5px;
 }
 
 /* the iframe is as wide as the Tools panel, so this tracks the panel width */
@@ -185,17 +187,18 @@ button.link {
     display: flex;
 }
 
-/* touch-sized: at least 48px tall, the whole row is the target */
+/* touch-sized: about 38px tall, the whole row is the target */
 .checklist .item {
     width: 100%;
-    min-height: 48px;
+    min-height: 38px;
     display: flex;
     align-items: center;
-    gap: 12px;
-    padding: 8px 12px;
+    gap: 10px;
+    padding: 5px 12px;
     border-radius: 8px;
     text-align: left;
     font-size: 15px;
+    line-height: 1.25;
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
 }
@@ -258,7 +261,7 @@ button.link {
 }
 
 /* flashes red twice when the prompt appears, then settles on amber */
-.prompt {
+.prompt.flash {
     animation: flash-red 0.7s ease-in-out 2;
 }
 
@@ -364,4 +367,14 @@ legend {
     align-items: center;
     flex-wrap: wrap;
     gap: 6px;
+}
+
+/* an option that belongs to the one above it */
+.option.sub {
+    margin-left: 26px;
+}
+
+.option.sub:has(input:disabled) {
+    opacity: 0.5;
+    cursor: default;
 }

@@ -15,6 +15,10 @@ export type Config = {
     autoReset: boolean;
     // the Checklist tab may be hidden when we pause, so make a sound
     beep: boolean;
+    // keep beeping every few seconds until the pause is dealt with
+    repeatBeep: boolean;
+    // flash the prompt red twice when it appears
+    flash: boolean;
 };
 
 const CONFIG_KEY = 'config';
@@ -48,6 +52,8 @@ export const defaultConfig = (): Config => ({
     mode: 'unticked',
     autoReset: true,
     beep: true,
+    repeatBeep: true,
+    flash: true,
 });
 
 const isMode = (value: unknown): value is GuardMode =>
@@ -79,6 +85,11 @@ const sanitizeConfig = (raw: unknown): Config => {
                 ? value.autoReset
                 : fallback.autoReset,
         beep: typeof value.beep === 'boolean' ? value.beep : fallback.beep,
+        repeatBeep:
+            typeof value.repeatBeep === 'boolean'
+                ? value.repeatBeep
+                : fallback.repeatBeep,
+        flash: typeof value.flash === 'boolean' ? value.flash : fallback.flash,
     };
 };
 

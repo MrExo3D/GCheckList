@@ -4,6 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { beep } from './beep';
 import type { Config } from './config';
 
+const REPEAT_BEEP_MS = 3000;
+
 type WorkflowState = 'idle' | 'running' | 'paused';
 
 // pausing: we sent the pause, gSender hasn't reported it yet
@@ -161,6 +163,20 @@ export const useJobGuard = ({ config, checked, onJobEnded }: Options) => {
             );
         }
     }, [preview]);
+
+    // the Checklist tab may be out of sight, so keep reminding until the pause
+    // is dealt with (Continue, Stop, or gSender's own buttons)
+    useEffect(() => {
+        if (phase === 'none') {
+            return undefined;
+        }
+        const cfg = configRef.current;
+        if (!cfg?.beep || !cfg.repeatBeep) {
+            return undefined;
+        }
+        const id = window.setInterval(beep, REPEAT_BEEP_MS);
+        return () => window.clearInterval(id);
+    }, [phase]);
 
     return { phase, error, preview, showPreview, continueJob, stopJob };
 };
