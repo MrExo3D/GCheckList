@@ -82,20 +82,19 @@ const sanitizeConfig = (raw: unknown): Config => {
     };
 };
 
-const SESSION_KEY = 'gchecklist-session';
+const LAUNCH_KEY = 'launch';
+const DEBUG_KEY = 'lastLoad';
 
-// sessionStorage lives as long as gSender's window, so it survives the tab
-// being re-mounted or the window reloading but not quitting and relaunching.
-// Ticks from a previous launch say nothing about the job being set up now.
-const isNewAppSession = (): boolean => {
+// Ticks from a previous launch say nothing about the job being set up now, so
+// they are cleared once per launch. The plugin runs in an iframe served from
+// the same origin as gSender's own window, so it can read when that window
+// was opened. That time is the same while the Checklist tab is re-mounted and
+// different after gSender is quit and started again.
+const currentLaunchId = (): string | null => {
     try {
-        if (sessionStorage.getItem(SESSION_KEY)) {
-            return false;
-        }
-        sessionStorage.setItem(SESSION_KEY, '1');
-        return true;
+        return String(Math.round(window.parent.performance.timeOrigin));
     } catch {
-        return true;
+        return null;
     }
 };
 
@@ -103,9 +102,10 @@ export const loadState = async (): Promise<{
     config: Config;
     checked: string[];
 }> => {
-    const [rawConfig, rawChecked] = await Promise.all([
+    const [rawConfig, rawChecked, rawLaunch] = await Promise.all([
         storage.get<unknown>(CONFIG_KEY),
         storage.get<unknown>(CHECKED_KEY),
+        storage.get<unknown>(LAUNCH_KEY),
     ]);
     const config =
         rawConfig === undefined ? defaultConfig() : sanitizeConfig(rawConfig);
@@ -115,12 +115,28 @@ export const loadState = async (): Promise<{
     const saved = Array.isArray(rawChecked)
         ? rawChecked.filter((id): id is string => typeof id === 'string')
         : [];
-    const newSession = isNewAppSession(); // always run, so the marker is set
-    if (newSession && saved.length > 0) {
-        await storage.set(CHECKED_KEY, []);
-        return { config, checked: [] };
+
+    // if the launch time can't be read, assume a new launch: starting with an
+    // empty list is the safe mistake
+    const launchId = currentLaunchId();
+    const newLaunch = launchId === null || rawLaunch !== launchId;
+    if (launchId !== null && newLaunch) {
+        await storage.set(LAUNCH_KEY, launchId);
     }
-    return { config, checked: saved };
+    const cleared = newLaunch && saved.length > 0;
+    if (cleared) {
+        await storage.set(CHECKED_KEY, []);
+    }
+    // a short record of the last load, for working out what happened
+    void storage.set(DEBUG_KEY, {
+        at: new Date().toISOString(),
+        launchId,
+        previousLaunchId: rawLaunch ?? null,
+        newLaunch,
+        savedTicks: saved.length,
+        cleared,
+    });
+    return { config, checked: cleared ? [] : saved };
 };
 
 export const saveConfig = (config: Config) => storage.set(CONFIG_KEY, config);
