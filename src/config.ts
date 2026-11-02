@@ -2,27 +2,32 @@ import { storage } from '@sienci/gsender-plugin-sdk';
 
 export type ChecklistItem = { id: string; text: string };
 
-// What happens when a job starts:
-//   off      - never interrupt
-//   unticked - pause only if something on the list is still unticked
-//   always   - pause and ask every time
-export type GuardMode = 'off' | 'unticked' | 'always';
-
 export type Config = {
     items: ChecklistItem[];
-    mode: GuardMode;
-    // clear the ticks once a job finishes, so every job starts fresh
-    autoReset: boolean;
-    // the Checklist tab may be hidden when we pause, so make a sound
-    beep: boolean;
-    // keep beeping every few seconds until the pause is dealt with
-    repeatBeep: boolean;
-    // flash the prompt red twice when it appears
-    flash: boolean;
 };
 
-const CONFIG_KEY = 'config';
-const CHECKED_KEY = 'checked';
+// gSender saves plugin data with a deep merge, which can add and overwrite but
+// never remove: saving a shorter array or object leaves the old entries behind
+// (an empty list clears nothing). Lists are therefore saved as JSON text, which
+// is replaced whole. The earlier versions saved real arrays under the old keys.
+const CONFIG_KEY = 'configJson';
+const CHECKED_KEY = 'checkedJson';
+const LAUNCH_KEY = 'launch';
+// keys written by earlier versions; read once so they can be migrated or removed
+const LEGACY_CONFIG_KEY = 'config';
+const LEGACY_CHECKED_KEY = 'checked';
+const LEGACY_DEBUG_KEY = 'lastLoad';
+
+const readJson = (raw: unknown): unknown => {
+    if (typeof raw !== 'string') {
+        return undefined;
+    }
+    try {
+        return JSON.parse(raw);
+    } catch {
+        return undefined;
+    }
+};
 
 export const newId = (): string =>
     globalThis.crypto?.randomUUID?.() ??
@@ -49,18 +54,12 @@ const DEFAULT_ITEM_TEXT = [
 
 export const defaultConfig = (): Config => ({
     items: DEFAULT_ITEM_TEXT.map((text) => ({ id: newId(), text })),
-    mode: 'unticked',
-    autoReset: true,
-    beep: true,
-    repeatBeep: true,
-    flash: true,
 });
 
-const isMode = (value: unknown): value is GuardMode =>
-    value === 'off' || value === 'unticked' || value === 'always';
-
 // storage holds whatever an older version (or a hand edit) wrote, so take
-// only the fields that look right and fall back to defaults for the rest
+// only the fields that look right and fall back to defaults for the rest.
+// Settings from versions that could pause jobs (mode, beep, flash...) are
+// ignored and dropped the next time the list is saved.
 const sanitizeConfig = (raw: unknown): Config => {
     const fallback = defaultConfig();
     if (!raw || typeof raw !== 'object') {
@@ -76,25 +75,14 @@ const sanitizeConfig = (raw: unknown): Config => {
                       typeof item.text === 'string',
               )
               .map(({ id, text }) => ({ id, text }))
+              // an earlier merge-based save could leave the same item twice
+              .filter(
+                  (item, index, all) =>
+                      all.findIndex((other) => other.id === item.id) === index,
+              )
         : fallback.items;
-    return {
-        items,
-        mode: isMode(value.mode) ? value.mode : fallback.mode,
-        autoReset:
-            typeof value.autoReset === 'boolean'
-                ? value.autoReset
-                : fallback.autoReset,
-        beep: typeof value.beep === 'boolean' ? value.beep : fallback.beep,
-        repeatBeep:
-            typeof value.repeatBeep === 'boolean'
-                ? value.repeatBeep
-                : fallback.repeatBeep,
-        flash: typeof value.flash === 'boolean' ? value.flash : fallback.flash,
-    };
+    return { items };
 };
-
-const LAUNCH_KEY = 'launch';
-const DEBUG_KEY = 'lastLoad';
 
 // Ticks from a previous launch say nothing about the job being set up now, so
 // they are cleared once per launch. The plugin runs in an iframe served from
@@ -109,22 +97,63 @@ const currentLaunchId = (): string | null => {
     }
 };
 
+export const saveConfig = (config: Config) =>
+    storage.set(CONFIG_KEY, JSON.stringify(config));
+
+export const saveChecked = (checked: string[]) =>
+    storage.set(CHECKED_KEY, JSON.stringify(checked));
+
 export const loadState = async (): Promise<{
     config: Config;
     checked: string[];
 }> => {
-    const [rawConfig, rawChecked, rawLaunch] = await Promise.all([
+    const [
+        rawConfig,
+        rawChecked,
+        rawLaunch,
+        legacyConfig,
+        legacyChecked,
+        legacyDebug,
+    ] = await Promise.all([
         storage.get<unknown>(CONFIG_KEY),
         storage.get<unknown>(CHECKED_KEY),
         storage.get<unknown>(LAUNCH_KEY),
+        storage.get<unknown>(LEGACY_CONFIG_KEY),
+        storage.get<unknown>(LEGACY_CHECKED_KEY),
+        storage.get<unknown>(LEGACY_DEBUG_KEY),
     ]);
-    const config =
-        rawConfig === undefined ? defaultConfig() : sanitizeConfig(rawConfig);
-    if (rawConfig === undefined) {
-        await storage.set(CONFIG_KEY, config);
+
+    // the list: the saved text, else the list an earlier version saved, else
+    // the defaults
+    const savedConfig = readJson(rawConfig);
+    const config = sanitizeConfig(
+        savedConfig !== undefined ? savedConfig : legacyConfig,
+    );
+    // saved again when it came from an older version, so the settings from the
+    // pausing versions are dropped
+    const hasOldSettings =
+        !!savedConfig &&
+        typeof savedConfig === 'object' &&
+        Object.keys(savedConfig).some((key) => key !== 'items');
+    if (savedConfig === undefined || hasOldSettings) {
+        await saveConfig(config);
     }
-    const saved = Array.isArray(rawChecked)
-        ? rawChecked.filter((id): id is string => typeof id === 'string')
+
+    // ticks an earlier version saved can't be trusted (clearing them never
+    // took effect), so they are dropped along with the other old keys
+    if (legacyConfig !== undefined) {
+        await storage.delete(LEGACY_CONFIG_KEY);
+    }
+    if (legacyChecked !== undefined) {
+        await storage.delete(LEGACY_CHECKED_KEY);
+    }
+    if (legacyDebug !== undefined) {
+        await storage.delete(LEGACY_DEBUG_KEY);
+    }
+
+    const savedChecked = readJson(rawChecked);
+    const saved = Array.isArray(savedChecked)
+        ? savedChecked.filter((id): id is string => typeof id === 'string')
         : [];
 
     // if the launch time can't be read, assume a new launch: starting with an
@@ -136,21 +165,7 @@ export const loadState = async (): Promise<{
     }
     const cleared = newLaunch && saved.length > 0;
     if (cleared) {
-        await storage.set(CHECKED_KEY, []);
+        await saveChecked([]);
     }
-    // a short record of the last load, for working out what happened
-    void storage.set(DEBUG_KEY, {
-        at: new Date().toISOString(),
-        launchId,
-        previousLaunchId: rawLaunch ?? null,
-        newLaunch,
-        savedTicks: saved.length,
-        cleared,
-    });
     return { config, checked: cleared ? [] : saved };
 };
-
-export const saveConfig = (config: Config) => storage.set(CONFIG_KEY, config);
-
-export const saveChecked = (checked: string[]) =>
-    storage.set(CHECKED_KEY, checked);

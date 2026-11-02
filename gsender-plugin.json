@@ -1,8 +1,8 @@
 {
   "id": "com.gcheck.job-checklist",
   "name": "GChecklist",
-  "description": "A pre-job checklist in the Tools panel. Can pause a job right after it starts if items are still unticked, so you can check before continuing.",
-  "version": "0.1.14",
+  "description": "A pre-job checklist in the Tools panel: tick off your setup steps before every job, edit the list to suit your machine, and the panel turns green when everything is checked.",
+  "version": "0.2.0",
   "engine": ">=1.6.0",
   "ui": {
     "entry": "ui/index.html",
@@ -13,10 +13,9 @@
       }
     ]
   },
-  "permissions": ["machine:read", "machine:write", "storage"],
+  "permissions": ["storage"],
   "capabilities": {
     "requestTypes": [
-      "machine:command",
       "storage:get",
       "storage:set",
       "storage:delete",
@@ -24,7 +23,7 @@
       "storage:set:all",
       "storage:clear"
     ],
-    "topics": ["controller"],
-    "allowedFunctions": ["machine", "storage"]
+    "topics": [],
+    "allowedFunctions": ["storage"]
   }
 }

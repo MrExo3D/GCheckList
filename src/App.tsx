@@ -3,21 +3,12 @@ import { useCallback, useEffect, useState } from 'react';
 import {
     type ChecklistItem,
     type Config,
-    type GuardMode,
     defaultConfig,
     loadState,
     newId,
     saveChecked,
     saveConfig,
 } from './config';
-import { useJobGuard } from './useJobGuard';
-
-const MODE_LABELS: Record<GuardMode, string> = {
-    unticked: 'Pause if anything is unticked',
-    always: 'Always pause and ask',
-    off: "Don't pause",
-};
-
 type ChecklistProps = {
     items: ChecklistItem[];
     checked: Set<string>;
@@ -55,10 +46,9 @@ type EditorProps = {
     config: Config;
     onChange: (config: Config) => void;
     onDone: () => void;
-    onTestPause: () => void;
 };
 
-const Editor = ({ config, onChange, onDone, onTestPause }: EditorProps) => {
+const Editor = ({ config, onChange, onDone }: EditorProps) => {
     const [confirmingRestore, setConfirmingRestore] = useState(false);
     const setItems = (items: ChecklistItem[]) => onChange({ ...config, items });
 
@@ -142,83 +132,10 @@ const Editor = ({ config, onChange, onDone, onTestPause }: EditorProps) => {
                 + Add item
             </button>
 
-            <fieldset>
-                <legend>When a job starts</legend>
-                {(Object.keys(MODE_LABELS) as GuardMode[]).map((mode) => (
-                    <label key={mode} className="option">
-                        <input
-                            type="radio"
-                            name="mode"
-                            checked={config.mode === mode}
-                            onChange={() => onChange({ ...config, mode })}
-                        />
-                        {MODE_LABELS[mode]}
-                    </label>
-                ))}
-                <button
-                    type="button"
-                    className="test-pause"
-                    onClick={onTestPause}
-                >
-                    Test pause prompt
-                </button>
-                <span className="hint">
-                    Shows the prompt and plays the beep. No job is paused.
-                </span>
-            </fieldset>
-
-            <fieldset>
-                <legend>Options</legend>
-                <label className="option">
-                    <input
-                        type="checkbox"
-                        checked={config.autoReset}
-                        onChange={(e) =>
-                            onChange({ ...config, autoReset: e.target.checked })
-                        }
-                    />
-                    Clear ticks when a job finishes
-                </label>
-                <label className="option">
-                    <input
-                        type="checkbox"
-                        checked={config.beep}
-                        onChange={(e) =>
-                            onChange({ ...config, beep: e.target.checked })
-                        }
-                    />
-                    Beep when pausing a job
-                </label>
-                <label className="option sub">
-                    <input
-                        type="checkbox"
-                        checked={config.repeatBeep}
-                        disabled={!config.beep}
-                        onChange={(e) =>
-                            onChange({
-                                ...config,
-                                repeatBeep: e.target.checked,
-                            })
-                        }
-                    />
-                    Keep beeping until answered
-                </label>
-                <label className="option">
-                    <input
-                        type="checkbox"
-                        checked={config.flash}
-                        onChange={(e) =>
-                            onChange({ ...config, flash: e.target.checked })
-                        }
-                    />
-                    Flash red when pausing a job
-                </label>
-            </fieldset>
-
             {/* the plugin iframe can't open browser dialogs, so confirm inline */}
             {confirmingRestore ? (
                 <div className="confirm">
-                    <span>Replace your list and options with the defaults?</span>
+                    <span>Replace your list with the default one?</span>
                     <button
                         type="button"
                         className="danger"
@@ -301,13 +218,6 @@ const App = () => {
         [updateChecked],
     );
 
-    const { phase, error, preview, showPreview, continueJob, stopJob } =
-        useJobGuard({
-            config,
-            checked,
-            onJobEnded: resetChecks,
-        });
-
     // turn the whole panel green once everything is ticked; the class goes on
     // <html> so the background fills the iframe, not just the list
     const everythingTicked =
@@ -329,59 +239,6 @@ const App = () => {
         );
     const doneCount = config.items.filter((item) => checkedSet.has(item.id)).length;
     const total = config.items.length;
-    const allDone = total > 0 && doneCount === total;
-
-    if (phase !== 'none') {
-        return (
-            <div
-                className={[
-                    'app prompt',
-                    allDone && 'ready',
-                    config.flash && 'flash',
-                ]
-                    .filter(Boolean)
-                    .join(' ')}
-                role="alertdialog"
-                aria-live="assertive"
-            >
-                <div className="prompt-head">
-                    <h1>
-                        {preview
-                            ? 'Test: job paused'
-                            : phase === 'pausing'
-                              ? 'Pausing job…'
-                              : 'Job paused'}
-                    </h1>
-                    <p>
-                        {preview
-                            ? 'This is how the prompt looks. No job is running.'
-                            : allDone
-                              ? 'Everything is ticked. Ready to continue?'
-                              : 'Did you check everything before this job?'}
-                    </p>
-                </div>
-                <Checklist
-                    items={config.items}
-                    checked={checkedSet}
-                    onToggle={toggle}
-                />
-                {error && <p className="error">{error}</p>}
-                <div className="actions">
-                    <button
-                        type="button"
-                        className={allDone ? 'primary' : undefined}
-                        disabled={phase === 'pausing'}
-                        onClick={continueJob}
-                    >
-                        Continue job
-                    </button>
-                    <button type="button" className="danger" onClick={stopJob}>
-                        Stop job
-                    </button>
-                </div>
-            </div>
-        );
-    }
 
     if (editing) {
         return (
@@ -390,10 +247,6 @@ const App = () => {
                     config={config}
                     onChange={updateConfig}
                     onDone={() => setEditing(false)}
-                    onTestPause={() => {
-                        setEditing(false);
-                        showPreview();
-                    }}
                 />
             </div>
         );
@@ -416,13 +269,6 @@ const App = () => {
                 />
             )}
             <div className="footer-bar">
-                <p className="hint footer">
-                    {config.mode === 'off'
-                        ? 'Jobs start without a check.'
-                        : config.mode === 'always'
-                          ? 'Each job pauses right after it starts so you can confirm.'
-                          : 'A job pauses right after it starts if anything is unticked.'}
-                </p>
                 <div className="toolbar-buttons">
                     <button
                         type="button"
