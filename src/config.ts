@@ -82,6 +82,23 @@ const sanitizeConfig = (raw: unknown): Config => {
     };
 };
 
+const SESSION_KEY = 'gchecklist-session';
+
+// sessionStorage lives as long as gSender's window, so it survives the tab
+// being re-mounted or the window reloading but not quitting and relaunching.
+// Ticks from a previous launch say nothing about the job being set up now.
+const isNewAppSession = (): boolean => {
+    try {
+        if (sessionStorage.getItem(SESSION_KEY)) {
+            return false;
+        }
+        sessionStorage.setItem(SESSION_KEY, '1');
+        return true;
+    } catch {
+        return true;
+    }
+};
+
 export const loadState = async (): Promise<{
     config: Config;
     checked: string[];
@@ -95,10 +112,15 @@ export const loadState = async (): Promise<{
     if (rawConfig === undefined) {
         await storage.set(CONFIG_KEY, config);
     }
-    const checked = Array.isArray(rawChecked)
+    const saved = Array.isArray(rawChecked)
         ? rawChecked.filter((id): id is string => typeof id === 'string')
         : [];
-    return { config, checked };
+    const newSession = isNewAppSession(); // always run, so the marker is set
+    if (newSession && saved.length > 0) {
+        await storage.set(CHECKED_KEY, []);
+        return { config, checked: [] };
+    }
+    return { config, checked: saved };
 };
 
 export const saveConfig = (config: Config) => storage.set(CONFIG_KEY, config);

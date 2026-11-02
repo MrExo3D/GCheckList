@@ -2,7 +2,7 @@
   "id": "com.gcheck.job-checklist",
   "name": "GChecklist",
   "description": "A pre-job checklist in the Tools panel. Can pause a job right after it starts if items are still unticked, so you can check before continuing.",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "engine": ">=1.6.0",
   "ui": {
     "entry": "ui/index.html",
